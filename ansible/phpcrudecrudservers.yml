@@ -1,0 +1,53 @@
+#install apache
+#
+#declarative
+---
+- hosts: phpcrudecrud
+  become: yes
+  become_method: sudo
+
+  tasks:
+   - name: Update Repository Cache
+     apt: update_cache=yes state=latest force_apt_get=yes
+
+   - name: Install Apache
+     apt: name=apache2 update_cache=yes state=latest
+
+   - name: Install PHP   
+     apt: name=php update_cache=yes state=latest
+
+   - name: Install PHP Apache Mod 
+     apt: name=libapache2-mod-php update_cache=yes state=latest
+
+   - name: Install PHP MySQL 
+     apt: name=php-mysql update_cache=yes state=latest
+
+   - name: Install PHP CLI 
+     apt: name=php-cli update_cache=yes state=latest
+
+   - name: fetch code from github
+     git: repo=https://github.com/axbjos/phpcrudecrudapp.git dest=/var/www/html/phpcrudecrud
+
+   - name: Install MariaDB
+     apt: name=mariadb-server update_cache=yes state=latest
+
+   - name: Get Employee Data
+     git: repo=https://github.com/datacharmer/test_db.git dest=/home/joeaxberg/test_db
+
+   - name: copy the addusers.sql file
+     template:
+       src: addusers.sql
+       dest: /home/joeaxberg
+
+   - name: add the php db user
+     shell: mysql -t < /home/joeaxberg/addusers.sql
+
+   - name: run the script that creates the employees schema and inserts the sample data 
+     shell:
+       cmd: mysql -t < employees.sql
+       chdir: /home/joeaxberg/test_db
+
+   - name: restart apache for good measure
+     service:
+       name: apache2
+       state: restarted
